@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <title>教师管理端</title>
+  <meta name="viewport" content="width=device-width , initial-scale=1">
+  <link rel="stylesheet" href="style.css" /> 
+    <style>
+    </style>
+
+ </head>
+ <body>
+  <header></header>
+   <h1>“课堂作业在线”--<small>(教师端)</small></h1>
+   <div id = 'main' >
+
+   </div>
+   <h2 id="tips">
+    应用操作提示信息栏
+   </h2>
+   <button id="query">
+      查看作业
+   </button>
+   <button id="queryHis">
+    历史作业
+   </button>  
+  <button id="submit">
+      提交成绩
+  </button>  
+  <!--
+   <button id="deleteItem">
+    删除作业
+  </button>
+  -->
+    
+
+   <div id="history" >
+      
+   </div>
+   <table id ='queryTable'  style="display: none">
+    <tr>
+      <td colspan="7" id="dataDate"> </td>
+    </tr>
+    <tr>
+    <th>序号</th>
+    <th>发布人</th>
+    <th>主题</th>
+    <th>时间</th>
+    <th>理论总结</th>
+    <th>实践代码</th>
+    <th>得分</th>
+  </tr>
+  </table> 
+    <div id="popup">
+    </div> 
+ 
+ <script src="clientJs.js"></script>
+ <script>
+   //响应式设计部分, 一些UI的方法在"clientJs.js"中，实现了admin.html和client.html通用
+   UI.reset() ;
+   UI.hidePopup() ;
+   UI.log('查看作业后，可以直接点击给出打分！') ;
+
+     //前端访问服务器部分
+     let Model = {} ;
+     
+     let query = document.querySelector('button#query') ;
+       query.addEventListener('click',() => {
+        UI.showQueryTable();
+        UI.clearHistory() ;
+        fetch('query')
+        .then(res => res.text())
+        .then(txt =>{
+            //console.log(txt) ;
+            items = JSON.parse(txt) ;
+            let trs = document.querySelectorAll('tr.show');
+           if(trs){
+               trs.forEach(e =>{
+                  document.querySelector('table').removeChild(e) ;
+               });
+              }
+            Model.items = JSON.parse(txt) ; //客户端的全局变量获取items今天作业最新情况  
+            Model.history = 'today' ;
+            UI.createTableDom(Model.items) ; 
+            //改造打分数的UI,注意：学生端重新上传今天作业后，已经打了的分数会被重置为70分
+            let checks = document.querySelectorAll('td.check');
+               for(let check of checks){
+                 check.onclick = () => {
+                   check.style.backgroundColor = 'lightblue' ;
+                   check.style.color = 'red' ;
+                   let score = parseInt(check.textContent) ;
+                   if(score < 90){
+                      check.textContent = score + 5 ;
+                   }else{
+                      check.textContent = 70 ;    
+                   }
+                  } ;
+                }
+         
+          })  ; //end  of then 异步获取了数据 
+       }) ; //end of query botton click event
+
+     let submit = document.querySelector('button#submit') ;
+       submit.addEventListener('click',() => {
+        let data = [] ;
+        let trs = document.querySelectorAll('tr.show') ;
+        trs.forEach( tr =>  data.push({  check: tr.lastChild.textContent  })) ;
+        //以确定是为当天作业，还是历史作业打分
+        //下面通过admin文件以客户端形式上传分数，在路由名称保密情况下，暂未验证老师密码，验证老师密码的代码待开发        
+     if(Model.history=='today'){   
+        fetch('adminPost' , {method: 'POST',
+                             headers: {'Content-Type' : 'application/json'},
+                             body:  JSON.stringify(data) })
+        .then(res => res.text())
+        .then(txt =>{
+          console.log(txt);
+          UI.log(txt)  ;
+          setTimeout(()=>{
+                    document.querySelector('h2#tips').textContent = '您还可以修改分数情况，再次提交！' ;
+                  },3000);
+       });
+      }else{ //获取Model.items 的作业时间，修改历史
+         
+        fetch('adminPostHistory'+ Model.history , {method: 'POST',
+                             headers: {'Content-Type' : 'application/json'},
+                             body:  JSON.stringify(data) })
+        .then(res => res.text())
+        .then(txt =>{
+          console.log(txt);
+          UI.log(txt)  ;
+          setTimeout(()=>{
+                    document.querySelector('h2#tips').textContent = '您还可以修改分数情况，再次提交！' ;
+                  },3000);
+       });
+      }
+       
+     }) ; //提交学生成绩清单按钮结束
+ 
+      //查询历史作业的按钮代码
+      document.querySelector('button#queryHis').addEventListener('click',() => {
+       UI.hideQueryTable() ;
+       //向页面的#history添加作业日期的按钮，添加前清除#history内可能出现的内容
+       UI.clearHistory() ;
+       UI.log("选择日期，打开历史作业！") ;
+       //查看的历史作业，历史作业是一个由若干文件名组成数组，每个文件名对应一个服务器上的文件
+        fetch('dataLists') //注意：这是GET方法向服务端请求dataLists路由
+        .then( res =>  res.text())
+        .then(txt => {
+          //console.log(JSON.parse(txt))
+          //服务端传来的数据，用JSON的parse处理后是一个数组，元素是按日期记录的数据文件的名称，
+          //下面代码将动态生成若干按钮，每个按钮上的信息是作业的日期，当用户点击按钮，则将向服务器代码申请读取指定日期的作业
+          let history = JSON.parse(txt) ; 
+          for(let e of history){
+            let b = document.createElement('button') ;
+                b.textContent = e ;
+                b.onclick = function(){
+                  UI.showQueryTable() ;
+                  UI.clearHistory() ;
+                  UI.log("点击原文/代码，可以打开内容！") ;
+                  Model.history = this.textContent ;
+         //下面利用req.url + ? +文件名，向服务器请求对应文件的数据。
+         //本客户端程序对应的服务器的API发出http请求。
+          //注意：这是GET方法向服务端请求history路由+文件名
+                  fetch('history'+ this.textContent )
+                  .then(res => res.text())
+                  .then((txt) => {
+                     Model.items = JSON.parse(txt) ;
+                     UI.createTableDom(Model.items);
+                     //改造打分数的UI
+                    let checks = document.querySelectorAll('td.check');
+                      for(let check of checks){
+                        check.onclick = () => {
+                          check.style.backgroundColor = 'lightblue' ;
+                          check.style.color = 'red' ;
+                          let score = parseInt(check.textContent) ;
+                          if(score < 90){
+                              check.textContent = score + 5 ;
+                          }else{
+                              check.textContent = 70 ;    
+                          }
+                          } ;
+                        }
+                   }) ;//动态按钮的then结束
+                };
+             document.querySelector('#history').appendChild(b) ;
+          }
+        }) ; //打开历史作业的then结束
+       }); //历史作业按钮的点击结束
+
+  /*
+    let deleteItem = document.querySelector('button#deleteItem') ;
+        deleteItem.addEventListener('click',() => {
+         let counter ;
+         while(!parseInt(counter)){
+          counter = prompt('请输入想删除作业的序号！') ;
+         }
+         console.log(counter,' type:' ,typeof counter) ;
+         fetch('adminDelete' +'?' + JSON.stringify(counter), {method: 'POST'})
+        .then(res => res.text())
+        .then(text => document.getElementById('tips').textContent = text )
+       });//输入序号，删除某条作业的按钮结束
+*/
+
+   </script>
+ </body>
+</html>

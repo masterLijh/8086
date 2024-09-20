@@ -1,0 +1,261 @@
+<!doctype html>
+ <html lang="en">
+   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width , initial-scale=1 , user-scalable=no">
+    <link rel="stylesheet" href="style.css" /> 
+    <style>
+    
+    </style>
+    <title>“课堂作业在线”</title>
+   </head>
+   <body>
+     <header></header>
+     <h1>“课堂作业在线”<small id="lessonName">《Web前端开发》</small></h1>
+     <div id = 'main'>
+      <form>
+       身份：教师<input type ="radio" name="sf" value="teacher" checked /> 
+       &nbsp;
+       学生<input type ="radio" name="sf" value="student" /><br> 
+       姓名：<input type="text" name="xm" class="sn" /> 
+       编号：<input type="text" name="xh"  class="sn" /> <br>
+       主题：<input type="text" name="bt" /> <br>
+       理论/原文：
+       <textarea name="yw" id="yuanwen"  >
+         提示：将编辑好的作业“ 纯文本 ”复制到此！
+       </textarea>
+       实践/代码：
+       <textarea name="dm" id="daima">
+         提示：将调试成功的作业“ 源代码 ”复制过来！
+       </textarea>
+       <hr/>
+       项目URL：<input type="input" name="project" />
+       <hr/>
+       <button id="submit">
+        提交作业
+       </button>
+       <hr/>
+      </form>
+     </div>  
+ 
+      <h2 id="tips">
+       课堂作业在线应用提示栏
+      </h2> 
+     <button id="readySubmit">
+      准备作业
+     </button>
+     <button id="query">
+      今天作业
+     </button>
+     <button id="queryHis">
+      历史作业
+     </button>     
+    
+     <div id="history">
+      
+     </div>
+       <table id ='queryTable' style="display: none;">
+         <tr>
+           <td colspan="7" id="dataDate"> </td>
+         </tr>
+         <tr>
+         <th>序号</th>
+         <th>发布人</th>
+         <th>主题</th>
+         <th>时间</th>
+         <th>理论总结</th>
+         <th>实践代码</th>
+         <th>得分</th>
+       </tr>
+       </table> 
+
+     <footer>
+      江西科技师范大学在线教学应用创新（作者：李健宏，tel：13870852215）
+     </footer>
+
+     <div id="popup">
+     </div>
+
+     <script src="clientJs.js"></script>
+     <script>
+      //响应式设计部分，前面的共用库clientJs.js建立了用于用户界面的全局变量UI
+         UI.reset() ;
+         UI.hidePopup() ;
+    
+      //表单提交前的预处理部分, 读取本地用户上次提交的基本信息，避免用户重复输入姓名和编号
+  let Model = {} ;
+     Model.localInfo  = window.localStorage.getItem('localInfo') ;
+     Model.items = [] ; //今天的作业，由点击“今日作业”按钮从服务端获取，通过query路由
+  //自动获取今天的作业
+  UI.showQueryTable() ;
+   fetch('query')
+        .then( res => res.text())
+        .then(txt =>{
+           Model.items = JSON.parse(txt) ; //客户端的全局变量获取items今天作业最新情况  
+           UI.createTableDom(Model.items) ; 
+           if(Model.items.length === 0){
+            UI.log("今天老师还没布置作业!") ;
+           }else{
+                 UI.log("作业列表如下，可点击打开详细内容!") ;
+           }
+          }) ; //end of then => txt 
+
+  UI.form = document.querySelector('form') ;
+  if(Model.localInfo){
+    let info = JSON.parse(Model.localInfo) ; //存盘的是JSON数据的字符串形式，代码中使用要转为对象数据
+    //表单的子元素可以用点操作符“ . ” 加上 “ name ” 属性，实现快速对象的引用
+     UI.form.xm.onclick = function(){ 
+       this.value = info.xm ;
+       this.onclick = '' ;
+     };
+     UI.form.xh.onclick = function(){
+       this.value = info.xh ;
+       this.onclick = '' ;
+     };
+   } // 读取用户本地数据结束
+    UI.form.yw.oninput = function(){
+       if(this.value.length > 1000 && UI.form.sf.value == 'student'){
+         UI.log('原文的字符数，不能超过1000个！') ;
+         this.focus() ;
+       }
+     } ;
+     UI.form.dm.oninput = function(){
+       if(this.value.length > 2000 && UI.form.sf.value == 'student'){
+         UI.log('代码的字符数，不能超过2K ！') ;
+         this.focus() ;
+       }
+     } ;
+     UI.form.dm.onclick = UI.form.yw.onclick = function(){
+      this.value = '' ;
+      UI.log('对您的每次点击，系统自动清除相应内容 ！') ;
+     }
+  //下面的代码可以判断学生学号的基本形式 ，若不达标则不让用户离开，当然这个功能会给误选择学生身份的老师带来不便，需要特别提醒老师用户 
+   UI.form.xh.onblur = function(){
+       let today = parseInt(new Date().getFullYear());
+       let sn1 = parseInt(this.value.trim().slice(0,4)) ;
+       let sn2 = this.value.trim().slice(4) ;
+       if(UI.form.sf.value =='student'){
+        if(sn1 < today - 4 || sn1 > today  || !/[0-9][0-9][0-9][0-9]/.test(sn2)){
+          UI.log('请务必输入正确的学号 ！' );
+          this.focus();
+          }
+         }
+      } ;    
+
+ 
+  //准备作业时，把表单打开 
+ document.querySelector('button#readySubmit').onclick = function(){
+   UI.showForm() ;
+   UI.hideQueryTable() ;
+   UI.clearHistory();
+   UI.log("请先在代码编辑器中准备好文本，用复制粘贴后提交！") ;
+  };
+  //提交作业给服务器的按钮代码 
+ document.querySelector('form>button#submit').onclick = function(e){
+    UI.hideQueryTable() ;
+    e.preventDefault() ;
+       let form = UI.form ;
+       let info = {} ;
+          info.sf = form.sf.value ;
+          info.xm = form.xm.value ;
+          info.xh = form.xh.value ;
+          info.bt = form.bt.value ;
+          info.yw = form.yw.value ;
+          info.dm = form.dm.value ;
+          info.project = form.project.value ;       
+         if (info.xm ==''||info.bt ==''||info.dm ==''){
+             UI.log('注意：作业至少要包括：人名、主题、代码。') ;
+         }else{ 
+            if (info.sf !=='teacher' && Model.items.length == 0){
+             UI.log('今天老师还未布置作业，所以您现在不能提交！') ;
+            }else {
+           //否则的逻辑，老师或学生，前端代码已经初步检测了表单的信息，
+           //可以上传服务器，由服务器代码将根据名字和学号来判断用户是否有权提交作业
+             let data =  JSON.stringify(info) ;
+             console.log('fetch:/' + data) ;
+             //fetch(url).then(res => console.log("fetch的第一次异步："+ res.status)) ; 
+             fetch('clientPost' , {method: 'POST',
+                                   headers: {'Content-Type' : 'application/json'},
+                                   body: data }) 
+             .then(res => {
+                  console.log("server response: " + res.status);
+                  UI.log('作业正在提交...' );
+                  return res.text()})
+             .then(txt => {
+                  console.log(txt);
+                  UI.log(txt) ;
+             //成功上传后，服务端代码传来的文本有二种，而对于不成功的上传，服务端代码仅传来一种文本，如下面if条件的txt所示：
+                  if(txt !== '您填写的身份信息，未通过审核，没有上传!'){ 
+                    //上面这段中文文本，是填报不成功时，服务端传来的文本反馈
+                    window.localStorage.setItem('localInfo',data) ; //成功申报后，把最新个人信息存储到本地 
+                    }
+                  setTimeout(()=>{
+                    UI.log('您还可点击查询作业提交情况！') ;
+                  },8000);
+                 } ) ;
+          //提醒服务端开发:fetch 把url转换为Web网络上传送的URI字节串，要用decodeURI解码，方可为我们的server.js读取
+            } //第二层否则
+          
+         
+          }//第一层否则
+        } ; //End of submit
+
+     //查询今天作业的按钮代码
+     document.querySelector('button#query').addEventListener('click',() => {
+        UI.hideForm() ;
+        UI.showQueryTable() ;
+        UI.clearHistory() ;
+        
+        fetch('query').then( res => {
+          console.log(res.status);
+          return  res.text() 
+         })
+        .then(txt =>{
+           Model.items = JSON.parse(txt) ; //客户端的全局变量获取items今天作业最新情况  
+           UI.createTableDom(Model.items) ; 
+           if(Model.items.length === 0){
+            UI.log("今天老师还没布置作业!") ;
+           }else{
+            UI.log("作业列表如下，可点击打开详细内容!") ;
+           }
+          }) ; //end of then => txt
+       }) ; //end of query botton click event
+     
+   
+    //查询历史作业的按钮代码
+   document.querySelector('button#queryHis').addEventListener('click',() => {
+       UI.hideForm() ;
+       UI.hideQueryTable() ;
+       //向页面的#history添加作业日期的按钮，添加前清除#history内可能出现的内容
+       UI.clearHistory() ;
+       UI.log("选择日期，打开历史作业！") ;
+       //查看的历史作业，历史作业是一个由若干文件名组成数组，每个文件名对应一个服务器上的文件
+        fetch('dataLists') //注意：这是GET方法向服务端请求dataLists路由
+        .then( res =>  res.text())
+        .then(txt => {
+          //console.log(JSON.parse(txt))
+          //服务端传来的数据，用JSON的parse处理后是一个数组，元素是按日期记录的数据文件的名称，
+          //下面代码将动态生成若干按钮，每个按钮上的信息是作业的日期，当用户点击按钮，则将向服务器代码申请读取指定日期的作业
+          let history = JSON.parse(txt) ; 
+          for(let e of history){
+            let b = document.createElement('button') ;
+                b.textContent = e ;
+                b.onclick = function(){
+                  UI.showQueryTable() ;
+                  document.querySelector('div#history').textContent = "" ;
+                  UI.log("点击原文/代码，可以打开内容！") ;
+         //本客户端程序对应的服务器的API，利用req.url + 文件名，向服务器请求对应文件的数据。
+                  fetch('history'+ this.textContent) 
+                  .then(res => res.text())
+                  .then((txt) => {
+                     Model.items = JSON.parse(txt) ;
+                     UI.createTableDom(Model.items);
+                   }) ;
+                };
+             document.querySelector('#history').appendChild(b) ;
+          }
+        }) ;
+       });
+     </script>
+   </body>
+ </html>

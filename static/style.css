@@ -1,0 +1,103 @@
+body{
+    position: relative;
+    margin: 0;
+}
+header,footer{font-size:2em;text-align: center;}
+header{
+  background-image: url('logo.jpg');
+  height: 5em;
+  background-size: cover;
+  background-color: white;
+  opacity: 0.5;
+}
+h1{
+  opacity: 1;
+  color:rgb(60, 200, 150);
+  position: absolute;
+  text-shadow: 2px 2px black;
+  top:1em;
+  left:1em;
+  font-size:2em;
+}
+footer{font-size: 1.2em;}
+form{font-size:1.5em;
+     height: 100% ;
+     font-family:宋体;border: 1px solid;
+     display: none;
+     background-color: lightblue;
+    }
+input{font-size:1.0em}
+input.sn{width: 6em;}
+textarea{height:7em ;
+         font-size:1em;
+        width: 98%;
+        font-family: Consolas;}
+textarea#yuanwen{background-color:burlywood;
+                 font-size: 0.6em;
+                 padding:0.5em 0}
+textarea#daima{color:antiquewhite;
+              background-color: rgb(30,50,60);
+              font-size: 0.6em; 
+              padding:0.5em 0}
+
+h2#tips{color:white;background-color: rgb(30,100,60);text-align: center; font-size:1.2em}
+button{font-size: 1.5em;}
+table{font-size:1.0em ;
+     border: 1px solid;}
+table td{border: 1px solid;
+         text-align: center;
+        padding: 0;}
+table tr.teacher{
+  background-color: antiquewhite;
+  color : blue ;
+}
+table td.yuanwen,table td.daima{
+  cursor: pointer;
+  background-color: aquamarine;
+}
+
+table td.check{
+  cursor: pointer;
+  font-size: 2em;
+}
+div#popup{
+  position: absolute;
+  width: 95%;
+  height: 95%;
+  left:0 ;
+  top: 0 ;
+  color:white;
+  background-color: rgb(30,50,60);
+  font-size: 1.2em;
+  font-family: Consolas;
+  padding:1em ;
+  text-align: justify;
+  display: none;
+  cursor: pointer;
+}
+div#popup span.whiteSpace{
+  color:rgb(30,50,60) ;
+}
+ div#history button{
+  background-color: black;
+  color:wheat ;
+  padding: 0.1em 0.2em;
+  display: inline-block;
+  margin:0.1em;
+}
+button{
+  cursor: pointer;
+}
+form button{
+  font-size: 1em;
+  display: block;
+  margin: auto ;
+  border-radius: 15%;
+}
+div#main{
+  background-image: url('myPic.jpg');
+  background-size: cover;
+  background-position: center;
+  overflow: scroll;
+ 
+}
